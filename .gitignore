@@ -1,0 +1,56 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+*.egg-info/
+
+# test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# data and outputs
+out*.png
+out*.jpg
+*.csv
+*.npz
+
+# Jupyter
+.ipynb_checkpoints/
+
+# logs
+*.log
+
+# secrets
+.env
+.env.*
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows image file cache
+ehthumbs.db
+
+# VS Code settings
+.vscode/*
+!/.vscode/settings.json
