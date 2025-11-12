@@ -54,3 +54,6 @@ ehthumbs.db
 # VS Code settings
 .vscode/*
 !/.vscode/settings.json
+
+# Ignore generated outputs inside the Data folder
+Data/saida/

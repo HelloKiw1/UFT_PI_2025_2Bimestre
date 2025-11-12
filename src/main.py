@@ -11,7 +11,8 @@ from segmentation import segment_color_by_valley
 # REPO_ROOT is the repository root (parent of src)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / 'Data'
-SAIDA_DIR = REPO_ROOT / 'saida'
+# Save outputs inside Data/saida so they stay with the dataset
+SAIDA_DIR = DATA_DIR / 'saida'
 SAIDA_DIR.mkdir(parents=True, exist_ok=True)
 
 

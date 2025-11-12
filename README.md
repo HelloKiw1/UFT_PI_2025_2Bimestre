@@ -45,3 +45,10 @@ Observações
 - As implementações usam OpenCV e NumPy.
 - O método do vale encontra um limiar a partir do histograma suavizado; se não encontrar dois picos, recorre ao método de Otsu.
 - Testes básicos com pytest estão em `tests/test_basic.py`.
+
+👥 Grupo
+
+Equipe responsável pelo repositório:
+
+- Eduardo Henrique
+- Shayla Alves
