@@ -57,3 +57,4 @@ ehthumbs.db
 
 # Ignore generated outputs inside the Data folder
 Data/saida/
+saida/
