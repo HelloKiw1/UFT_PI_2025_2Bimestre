@@ -2,6 +2,8 @@ import numpy as np
 
 
 def _smooth_histogram(hist: np.ndarray, sigma: float = 2.0) -> np.ndarray:
+    # Suavização: h_s = h * G_sigma, onde G_sigma(k) = exp(-k^2/(2*sigma^2))/Z
+    # Implementado por convolução discreta com um kernel Gaussiano.
     size = int(max(3, int(6 * sigma)))
     if size % 2 == 0:
         size += 1
@@ -13,6 +15,9 @@ def _smooth_histogram(hist: np.ndarray, sigma: float = 2.0) -> np.ndarray:
 
 
 def valley_threshold_gray(gray: np.ndarray, sigma: float = 2.0) -> int:
+    # Método do vale (valley): calcular histograma h(i), suavizar h_s,
+    # detectar picos locais p1,p2 e escolher t = argmin_{i in [p1,p2]} h_s(i).
+    # Se houver menos de dois picos, usar Otsu como fallback.
     if gray is None:
         raise ValueError("gray é None")
     if gray.ndim != 2:
@@ -46,6 +51,8 @@ def valley_threshold_gray(gray: np.ndarray, sigma: float = 2.0) -> int:
 
 
 def otsu_threshold(gray: np.ndarray) -> int:
+    # Otsu: p_i = h(i)/N, omega(t)=sum_{i<=t} p_i, mu(t)=sum_{i<=t} i*p_i,
+    # mu_T = mu(255). Escolher t que maximiza sigma_B^2(t) = ((mu_T*omega - mu)^2)/(omega*(1-omega)).
     hist, _ = np.histogram(gray.ravel(), bins=256, range=(0, 255))
     hist = hist.astype(np.float64)
     total = hist.sum()
@@ -61,6 +68,8 @@ def otsu_threshold(gray: np.ndarray) -> int:
 
 
 def segment_color_by_valley(img_color: np.ndarray, sigma: float = 2.0, return_mask: bool = False):
+    # Conversão para intensidade: gray = 0.114*B + 0.587*G + 0.299*R
+    # Em seguida encontra-se o limiar via método do vale (ou Otsu) e aplica-se a máscara.
     if img_color is None:
         raise ValueError("img_color é None")
     if img_color.ndim != 3:
