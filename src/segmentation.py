@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 
 
@@ -40,9 +39,8 @@ def valley_threshold_gray(gray: np.ndarray, sigma: float = 2.0) -> int:
             peaks.append(i)
 
     if len(peaks) < 2:
-        # fallback to Otsu
-        _, th = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        return int(th)
+        # fallback to Otsu (pure NumPy implementation)
+        return otsu_threshold(gray)
 
     # take two highest peaks by smoothed histogram value
     peak_vals = [(int(p), float(sh[p])) for p in peaks]
@@ -56,11 +54,30 @@ def valley_threshold_gray(gray: np.ndarray, sigma: float = 2.0) -> int:
     slice_vals = sh[p1:p2 + 1]
     if slice_vals.size == 0:
         # fallback
-        _, th = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        return int(th)
+        return otsu_threshold(gray)
     valley_rel = int(np.argmin(slice_vals))
     valley_idx = p1 + valley_rel
     return int(valley_idx)
+
+
+def otsu_threshold(gray: np.ndarray) -> int:
+    """Compute Otsu threshold using pure NumPy.
+
+    Returns integer threshold in [0,255].
+    """
+    hist, _ = np.histogram(gray.ravel(), bins=256, range=(0, 255))
+    hist = hist.astype(np.float64)
+    total = hist.sum()
+    if total == 0:
+        return 0
+    prob = hist / total
+    omega = np.cumsum(prob)
+    mu = np.cumsum(prob * np.arange(256))
+    mu_t = mu[-1]
+    sigma_b2 = (mu_t * omega - mu) ** 2 / (omega * (1.0 - omega) + 1e-12)
+    # ignore first and last where denom 0
+    idx = np.nanargmax(sigma_b2)
+    return int(idx)
 
 
 def segment_color_by_valley(img_color: np.ndarray, sigma: float = 2.0, return_mask: bool = False):
@@ -79,7 +96,14 @@ def segment_color_by_valley(img_color: np.ndarray, sigma: float = 2.0, return_ma
     if img_color.ndim != 3:
         raise ValueError("Input must be a color (3-channel) image")
 
-    gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
+    # Convert BGR/RGB to grayscale using luminosity method. If the image
+    # is in BGR order (OpenCV), this formula still produces a valid intensity
+    # map because it's just a linear combination of channels.
+    b = img_color[:, :, 0].astype(np.float32)
+    g = img_color[:, :, 1].astype(np.float32)
+    r = img_color[:, :, 2].astype(np.float32)
+    gray = (0.114 * b + 0.587 * g + 0.299 * r).astype(np.uint8)
+
     th = valley_threshold_gray(gray, sigma=sigma)
 
     # Choose foreground as bright region (pixels > th). If majority is above, invert.
@@ -90,7 +114,9 @@ def segment_color_by_valley(img_color: np.ndarray, sigma: float = 2.0, return_ma
     if frac > 0.85:
         mask = (gray <= th).astype(np.uint8) * 255
 
-    segmented = cv2.bitwise_and(img_color, img_color, mask=mask)
+    # Apply mask to color image
+    segmented = img_color.copy()
+    segmented[mask == 0] = 0
     if return_mask:
         return segmented, mask
     return segmented

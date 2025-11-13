@@ -1,5 +1,8 @@
-import cv2
 import numpy as np
+
+# Naive implementations using only NumPy (no OpenCV) for portability and
+# educational purposes. These functions implement basic grayscale
+# morphological operations using min/max filters.
 
 
 def erosion(image: np.ndarray, kernel_size: int = 3, iterations: int = 1) -> np.ndarray:
@@ -15,16 +18,46 @@ def erosion(image: np.ndarray, kernel_size: int = 3, iterations: int = 1) -> np.
     """
     if image is None:
         raise ValueError("image is None")
-    k = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
-    return cv2.erode(image, k, iterations=iterations)
+    if image.ndim != 2:
+        raise ValueError("erosion: input must be a 2D grayscale image")
+
+    img = image.astype(np.uint8).copy()
+    h, w = img.shape
+    pad = kernel_size // 2
+    for _ in range(iterations):
+        padded = np.pad(img, pad, mode='constant', constant_values=255)
+        out = np.empty_like(img)
+        for i in range(h):
+            for j in range(w):
+                window = padded[i:i + kernel_size, j:j + kernel_size]
+                out[i, j] = window.min()
+        img = out
+    return img
 
 
 def dilation(image: np.ndarray, kernel_size: int = 3, iterations: int = 1) -> np.ndarray:
-    """Perform dilation on a grayscale image."""
+    """Perform dilation on a grayscale image using a max filter (NumPy).
+
+    This is a naive implementation (nested loops). For large images use
+    optimized libraries.
+    """
     if image is None:
         raise ValueError("image is None")
-    k = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
-    return cv2.dilate(image, k, iterations=iterations)
+    if image.ndim != 2:
+        raise ValueError("dilation: input must be a 2D grayscale image")
+
+    img = image.astype(np.uint8).copy()
+    h, w = img.shape
+    pad = kernel_size // 2
+    for _ in range(iterations):
+        padded = np.pad(img, pad, mode='constant', constant_values=0)
+        out = np.empty_like(img)
+        for i in range(h):
+            for j in range(w):
+                window = padded[i:i + kernel_size, j:j + kernel_size]
+                out[i, j] = window.max()
+        img = out
+    return img
 
 
 def top_hat(image: np.ndarray, kernel_size: int = 15) -> np.ndarray:
@@ -39,5 +72,13 @@ def top_hat(image: np.ndarray, kernel_size: int = 15) -> np.ndarray:
     """
     if image is None:
         raise ValueError("image is None")
-    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
-    return cv2.morphologyEx(image, cv2.MORPH_TOPHAT, k)
+    if image.ndim != 2:
+        raise ValueError("top_hat: input must be a 2D grayscale image")
+
+    # Opening = erosion followed by dilation
+    opened = erosion(image, kernel_size=kernel_size, iterations=1)
+    opened = dilation(opened, kernel_size=kernel_size, iterations=1)
+    # top-hat = original - opened (clip to unsigned range)
+    res = image.astype(np.int16) - opened.astype(np.int16)
+    res = np.clip(res, 0, 255).astype(np.uint8)
+    return res
